@@ -1,0 +1,7 @@
+¿Por qué una valización estricta?
+- El requerimiento pedía "máximo 2 decimales". En OpenAPI, declarar algo como float no impide que alguien envíe 4.5555. Al usar multipleOf: 0.01, herramientas de validación automática (como Prism o Gateways de API) rechazarán cualquier valor que intente romper la regla monetaria, protegiendo la integridad de la base de datos desde la definición.
+
+¿Por qué la paginación?
+- limit: Controla el tamaño de la carga. Si el usuario pide 100, le das 100. al final se usa un maximum: 100 por seguridad; nunca permitas que un cliente pida un millón de registros de golpe porque tumbaría el servidor.
+- offset: Permite al frontend decir "ya tengo los primeros 20, dame los siguientes 20" (offset=20).
+- Metadata en el Response: He cambiado la respuesta de una lista simple a un objeto que contiene el total. Esto es crucial para que el frontend sepa cuántas páginas de botones debe dibujar (ej. "Mostrando 20 de 450 resultados").

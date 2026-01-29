@@ -1,0 +1,147 @@
+openapi: 3.0.0
+info:
+  title: EcoMarket API
+  description: API profesional para la conexión entre productores y consumidores.
+  version: 1.1.0
+
+servers:
+  - url: https://api.ecomarket.com/v1
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Categoria:
+      type: string
+      enum: [frutas, verduras, lacteos, miel, conservas]
+      example: verduras
+
+    Producto:
+      type: object
+      required: [nombre, precio, categoria, productor_id]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        nombre:
+          type: string
+          example: "Miel de Abeja Orgánica"
+        descripcion:
+          type: string
+          example: "Miel pura de flores silvestres."
+        precio:
+          type: number
+          format: float
+          minimum: 0
+          multipleOf: 0.01  # <--- Mejora 1: Validación estricta de 2 decimales
+          description: "Precio unitario. No se aceptan más de 2 decimales (múltiplo de 0.01)."
+          example: 12.50
+        categoria:
+          $ref: '#/components/schemas/Categoria'
+        productor_id:
+          type: integer
+          example: 50
+        disponible:
+          type: boolean
+          default: true
+        creado_en:
+          type: string
+          format: date-time
+          readOnly: true
+
+    # Envoltura para respuestas paginadas
+    ProductosPaginados:
+      type: object
+      properties:
+        total:
+          type: integer
+          description: "Total de productos en la base de datos"
+          example: 450
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Producto'
+
+    Error:
+      type: object
+      properties:
+        codigo:
+          type: string
+        mensaje:
+          type: string
+
+  responses:
+    BadRequest:
+      description: Error en los datos enviados.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            codigo: VALIDACION_FALLIDA
+            mensaje: "El precio 12.555 no es válido. Máximo 2 decimales permitidos."
+
+paths:
+  /productos:
+    get:
+      summary: Listar productos con paginación y filtros
+      description: Retorna un bloque de productos basado en el límite y desplazamiento.
+      parameters:
+        - name: categoria
+          in: query
+          schema:
+            $ref: '#/components/schemas/Categoria'
+        # --- Mejora 2: Parámetros de Paginación ---
+        - name: limit
+          in: query
+          description: "Cantidad de resultados a retornar (Bloques sugeridos: 20, 50, 100)"
+          required: false
+          schema:
+            type: integer
+            default: 20
+            maximum: 100
+        - name: offset
+          in: query
+          description: "Número de registros a saltar para la siguiente página"
+          required: false
+          schema:
+            type: integer
+            default: 0
+      responses:
+        '200':
+          description: Lista paginada de productos.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductosPaginados'
+
+    post:
+      summary: Crear un nuevo producto
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Producto'
+      responses:
+        '201':
+          description: Producto creado.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Producto'
+        '400':
+          $ref: '#/components/responses/BadRequest'
