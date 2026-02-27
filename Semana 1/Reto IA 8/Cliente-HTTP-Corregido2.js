@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://127.0.0.1:4010';
 
 // Función Helper Privada (MEJORADA)
 async function request(endpoint, { method = 'GET', body } = {}) {
