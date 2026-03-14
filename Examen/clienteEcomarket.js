@@ -1,4 +1,44 @@
 // ==========================================
+// MOCK (SIMULADOR) DE SERVIDOR PARA PRUEBAS
+// ==========================================
+let contadorPeticiones = 0;
+global.fetch = async (url, options) => {
+    // Simulamos el retraso de la red
+    await new Promise(r => setTimeout(r, 500));
+
+    // Si es un POST a /alertas
+    if (url.includes('/alertas')) {
+        return { status: 201 }; // Simulamos éxito al crear alerta
+    }
+
+    // Si es un GET a /inventario
+    if (url.includes('/inventario')) {
+        contadorPeticiones++;
+        console.log(`\n--- 🌐 [Servidor Simulado] Petición GET #${contadorPeticiones} recibida ---`);
+
+        if (contadorPeticiones === 1) {
+            // Petición 1: Todo bien, enviamos un producto BAJO_MINIMO
+            return {
+                status: 200,
+                headers: new Headers({ 'ETag': 'version-1' }),
+                json: async () => ({
+                    productos: [
+                        { id: "PROD-001", nombre: "Cereal Eco", stock: 2, stock_minimo: 10, status: "BAJO_MINIMO" }
+                    ]
+                })
+            };
+        } else if (contadorPeticiones === 2) {
+            // Petición 2: Simulamos que el servidor se cae (503) para ver el Backoff
+            return { status: 503 };
+        } else {
+            // Peticiones 3 en adelante: Simulamos que el servidor se recuperó pero no hay cambios (304)
+            return { status: 304 };
+        }
+    }
+};
+// ==========================================
+
+// ==========================================
 // CONFIGURACIÓN BASE
 // ==========================================
 const CONFIG = {

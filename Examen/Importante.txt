@@ -1,0 +1,4 @@
+Para realizar la prueba se tuvo que usar un mockserver para poder comprobar que funcionara correctamente el código,
+usando Node.js para realizar la prueba en WSL, cuando se Utiliza node a partir de la petición #3 se queda en un
+estado de espera a una nueva actualización, por lo que ya no mostrara nada mas después de la petición #3 y se verá
+en blanco, para poder detenerlo utiliza Ctrl + C
