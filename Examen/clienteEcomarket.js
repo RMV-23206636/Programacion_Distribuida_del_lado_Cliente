@@ -175,4 +175,48 @@ class MonitorInventario {
         
         return null;
     }
+
+    // ==========================================
+    // CICLO PRINCIPAL DE POLLING
+    // ==========================================
+    async iniciar() {
+        this._ejecutando = true;
+        console.log("🚀 Monitor de Inventario iniciado...");
+
+        while (this._ejecutando) {
+            const nuevosDatos = await this._consultar_inventario();
+
+            if (nuevosDatos) {
+                // Rúbrica: Reseteo de intervalo de backoff si hubo éxito y datos nuevos (200 OK)
+                this._intervalo = CONFIG.INTERVALO_BASE;
+                await this._notificar(nuevosDatos);
+            }
+
+            // Invariante: Sleep no bloqueante para el Event Loop
+            await new Promise(resolve => setTimeout(resolve, this._intervalo));
+        }
+        
+        console.log("🛑 Monitor de Inventario detenido correctamente.");
+    }
+
+    detener() {
+        // Rúbrica: Cierre suave
+        console.log("⚠️ Deteniendo monitor en el próximo ciclo...");
+        this._ejecutando = false;
+    }
 }
+
+// ==========================================
+// INICIO DEL SCRIPT (Prueba de uso)
+// ==========================================
+(async () => {
+    // Instanciamos
+    const monitor = new MonitorInventario();
+    
+    // Suscribimos los módulos
+    monitor.suscribir(new ModuloCompras());
+    monitor.suscribir(new ModuloAlertas());
+
+    // Iniciamos el ciclo
+    monitor.iniciar();
+})();
