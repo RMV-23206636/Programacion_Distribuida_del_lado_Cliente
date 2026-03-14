@@ -32,10 +32,42 @@ class ModuloCompras extends Observador {
     }
 }
 
+// ==========================================
+// ACTUALIZACIÓN DE OBSERVADOR (POST /alertas)
+// ==========================================
 class ModuloAlertas extends Observador {
     async actualizar(inventario) {
-        // Esqueleto para la Fase 2: Aquí irá el POST asíncrono a /alertas
-        console.log("🚨 [Alertas] Revisando inventario para enviar POST a la API central...");
+        // Obtenemos los productos bajo mínimo
+        const criticos = inventario.productos.filter(p => p.status === "BAJO_MINIMO");
+        
+        for (const producto of criticos) {
+            // Construcción del Body requerido (Especificación de la API)
+            const payload = {
+                producto_id: producto.id,          // string
+                stock_actual: producto.stock,      // number
+                stock_minimo: producto.stock_minimo, // number
+                timestamp: new Date().toISOString() // string ISO 8601
+            };
+
+            try {
+                // POST asíncrono a /alertas con los headers correctos
+                const response = await fetch(`${CONFIG.BASE_URL}/alertas`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                // Rúbrica: Manejar 201 y 422 de forma diferenciada
+                if (response.status === 201) {
+                    console.log(`🚨 [Alertas] Alerta registrada exitosamente para ${producto.id}`);
+                } else if (response.status === 422) {
+                    console.warn(`⚠️ [Alertas] Error 422 en ${producto.id}: Campos inválidos. NO reintentar.`);
+                }
+            } catch (error) {
+                // Captura de errores de red del lado de las alertas
+                console.error(`🔌 [Alertas] Error de conexión al enviar alerta de ${producto.id}:`, error.message);
+            }
+        }
     }
 }
 
@@ -69,5 +101,78 @@ class MonitorInventario {
                 console.error("❌ [Monitor] Error en un observador, continuando con el resto:", error.message);
             }
         }
+    }
+
+    // =======================================================
+    // NUEVO MÉTODO PARA MonitorInventario (GET /inventario)
+    // =======================================================
+    async _consultar_inventario() {
+        // 1. Construir headers con Authorization (Obligatorio)
+        const headers = {
+            'Authorization': `Bearer ${CONFIG.TOKEN}`,
+            'Accept': 'application/json'
+        };
+
+        // Rúbrica: Polling con detección de cambios (If-None-Match)
+        if (this._ultimo_etag) {
+            headers['If-None-Match'] = this._ultimo_etag;
+        }
+
+        // Rúbrica: Timeout configurado en la petición GET
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), CONFIG.TIMEOUT);
+
+        try {
+            const response = await fetch(`${CONFIG.BASE_URL}/inventario`, {
+                headers: headers,
+                signal: controller.signal // Inyectamos el timeout
+            });
+
+            clearTimeout(timeoutId); // Limpiamos el timeout si respondió a tiempo
+
+            // 2. Manejo diferenciado de errores
+            if (response.status === 200) {
+                const data = await response.json();
+                
+                // Invariante: Validar el body antes de usarlo
+                if (!data || !data.productos || !Array.isArray(data.productos)) {
+                    console.warn("⚠️ [Monitor] JSON inválido: No se encontró el arreglo de 'productos'.");
+                    return null; 
+                }
+
+                // Actualizamos estado y retornamos datos nuevos
+                this._ultimo_etag = response.headers.get('ETag') || this._ultimo_etag;
+                this._ultimo_estado = data;
+                return data;
+
+            } else if (response.status === 304) {
+                // 304 Not Modified: No hay cambios, no retornamos datos
+                return null;
+
+            } else if (response.status >= 400 && response.status < 500) {
+                // Invariante: 400 o 401 NO reintenta, NO modifica el intervalo
+                console.error(`🛑 [Monitor] Error cliente (${response.status}). Revisa Token/Headers. NO se reintentará.`);
+                return null;
+
+            } else if (response.status >= 500) {
+                // Invariante: 503 incrementa el intervalo (Backoff)
+                console.warn(`🐢 [Monitor] Servidor saturado (${response.status}). Aplicando Backoff...`);
+                this._intervalo = Math.min(this._intervalo * 2, CONFIG.INTERVALO_MAX);
+                return null;
+            }
+
+        } catch (error) {
+            clearTimeout(timeoutId);
+            // Invariante: NUNCA propagar una excepción al ciclo de polling.
+            // Errores de red o Timeout solo registran el warning y retornan null.
+            if (error.name === 'AbortError') {
+                console.warn("⏳ [Monitor] Timeout alcanzado. La red está lenta, pero el ciclo continuará.");
+            } else {
+                console.warn(`🔌 [Monitor] Error de red: ${error.message}. El ciclo continuará.`);
+            }
+            return null;
+        }
+        
+        return null;
     }
 }
