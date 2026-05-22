@@ -1,0 +1,40 @@
+=================================
+Iniciando Monitor EcoMarket
+=================================
+--- Consultando https://api.ecomarket.com con ETag None (timeout 10s)...
+[UI] Datos actualizados. Productos: 2
+[ALERTA] ¡Producto 2 agotado!
+
+[TEST] Simulando servidor sin cambios (304)
+--- Consultando https://api.ecomarket.com con ETag etag-v1 (timeout 10s)...
+Intervalo actual: 7.5s
+
+[TEST] Simulando Timeout de servidor
+--- Consultando https://api.ecomarket.com con ETag etag-v1 (timeout 10s)...
+[TIMEOUT REGISTRADO] El servidor tardó demasiado en responder.
+Intervalo actual tras timeout: 15.0s
+
+[TEST] Simulando Error 500
+--- Consultando https://api.ecomarket.com con ETag etag-v1 (timeout 10s)...
+[ERROR REGISTRADO] Ocurrió un error en el servidor: {'status': 500, 'headers': {}, 'json': None}
+Intervalo actual tras 500: 30.0s
+
+[TEST] Simulando Observador que falla
+--- Consultando https://api.ecomarket.com con ETag etag-v1 (timeout 10s)...
+[Observable] Error en observador: Datos inválidos recibidos
+[Observable] Error en observador: Fallo provocado en un observador
+[UI] Datos actualizados. Productos: 2
+[ALERTA] ¡Producto 2 agotado!
+
+[TEST] Simulando JSON malformado (body no JSON)
+--- Consultando https://api.ecomarket.com con ETag etag-v2 (timeout 10s)...
+[Observable] Error en observador: Datos inválidos recibidos
+[Observable] Error en observador: Fallo provocado en un observador
+
+[TEST] Prueba de desacoplamiento: Agregando y quitando observador
+
+Deteniendo monitor...
+
+# PRUEBA DE DESACOPLAMIENTO:
+# Agregué observador_temporal y lo quité sin modificar ServicioPolling. ✓
+# ServicioPolling no tiene referencia directa a ningún observador. ✓
