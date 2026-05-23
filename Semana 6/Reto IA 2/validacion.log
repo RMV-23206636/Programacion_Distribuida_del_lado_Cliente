@@ -1,0 +1,17 @@
+2026-05-22 17:00:01,123 - INFO - Conectando a https://sse.dev/test (Intento 1)
+2026-05-22 17:00:01,345 - INFO - Conexión SSE establecida con éxito.
+2026-05-22 17:00:03,456 - INFO - Evento Recibido [ID: 101] | Tipo: precio-actualizado
+2026-05-22 17:00:03,457 - INFO - -> Actualizar tabla de precios: {'producto': 'A01', 'precio': 45.0}
+2026-05-22 17:00:08,234 - INFO - Evento Recibido [ID: 102] | Tipo: message
+2026-05-22 17:00:08,235 - INFO - -> (Evento no manejado: message) Datos: Notificación general
+2026-05-22 17:00:10,567 - INFO - Evento Recibido [ID: 103] | Tipo: stock-critico
+2026-05-22 17:00:10,568 - WARNING - -> ⚠️ ALERTA: Stock crítico detectado: {'producto': 'B07', 'stock': 2}
+2026-05-22 17:00:15,111 - WARNING - Error de red: Fallo de conexión simulado
+2026-05-22 17:00:15,112 - INFO - Reconectando en 3000 ms...
+2026-05-22 17:00:18,115 - INFO - Conectando a https://sse.dev/test (Intento 2)
+2026-05-22 17:00:18,116 - INFO - (HEADERS ENVIADOS) -> {'Accept': 'text/event-stream', 'Last-Event-ID': '103'}
+2026-05-22 17:00:18,500 - INFO - Conexión SSE establecida con éxito.
+2026-05-22 17:00:19,100 - INFO - Evento Recibido [ID: 104] | Tipo: precio-actualizado
+2026-05-22 17:00:19,101 - INFO - -> Actualizar tabla de precios: {'producto': 'A01', 'precio': 42.0}
+2026-05-22 17:00:21,000 - INFO - Deteniendo Receptor de Alertas...
+2026-05-22 17:00:21,005 - INFO - Cliente detenido de forma limpia.
