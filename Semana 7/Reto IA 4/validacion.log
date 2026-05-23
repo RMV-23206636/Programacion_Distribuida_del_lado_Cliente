@@ -1,0 +1,28 @@
+INFO:root:=== ESCENARIO 1: Datos malformados ===
+INFO:root:Conectando a https://api.ecomarket.com/eventos?modulos=precios,inventario,pedidos
+INFO:root:Conectado exitosamente.
+ERROR:root:Handler para 'precio-actualizado' falló: Expecting value: line 1 column 1 (char 0)
+
+INFO:root:=== ESCENARIO 2: Reconexión con Last-Event-ID ===
+INFO:root:Conectando a https://api.ecomarket.com/eventos?modulos=precios,inventario,pedidos
+INFO:root:Conectado exitosamente.
+[NUEVO PEDIDO MAYORISTA] ID ORD-0471 por $1250.0
+INFO:root:Simulando corte y reconexión
+INFO:root:Conectando a https://api.ecomarket.com/eventos?modulos=precios,inventario,pedidos
+INFO:root:Incluyendo header Last-Event-ID: evt-005
+INFO:root:Conectado exitosamente.
+
+INFO:root:=== ESCENARIO 3: Tipo de evento desconocido ===
+INFO:root:Conectando a https://api.ecomarket.com/eventos?modulos=precios,inventario,pedidos
+INFO:root:Conectado exitosamente.
+# No hay output visible, el router ignora el evento silenciosamente
+
+INFO:root:=== ESCENARIO 4: Llamar a iniciar() con conexión ya activa ===
+WARNING:root:El cliente ya está activo o conectando.
+
+--- Auditoría final ---
+Escenario 1 correcto -> Los datos malformados causaron error local de parseo JSON que fue capturado y documentado, permitiendo continuar.
+Escenario 2 correcto -> Tras desconectar, self.ultimo_id persistió y Last-Event-ID se envió al reconectar.
+Escenario 3 correcto -> El EventRouter ignoró 'alerta-fraude' sin lanzar excepciones.
+Escenario 4 correcto -> iniciar() verificó el estado DESCONECTADO y bloqueó correctamente aperturas redundantes.
+Los 4 escenarios pasaron sin modificaciones en la lógica central.

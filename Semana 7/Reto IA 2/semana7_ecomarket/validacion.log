@@ -1,0 +1,11 @@
+INFO:root:Conectando a https://api.ecomarket.com/eventos?modulos=precios,inventario,pedidos
+INFO:root:Conectado exitosamente.
+[ALERTA PRECIO] Cambio mayor al 5%: Producto P042 de $89.0 a $79.5
+[ALERTA STOCK] CRITICO: SKU P019 tiene 3 uds (umbral: 10)
+[NUEVO PEDIDO MAYORISTA] ID ORD-0471 por $1250.0
+[PING DEL SISTEMA] Conexión activa confirmada a las 2026-03-10T14:32:30Z
+ERROR:root:Handler para 'precio-actualizado' falló: Excepción forzada para prueba de robustez de EventRouter
+[ALERTA STOCK] BAJO: SKU P020 tiene 8 uds (umbral: 10)
+[ALERTA PRECIO] Cambio mayor al 5%: Producto P050 de $100.0 a $110.0
+[NUEVO PEDIDO MAYORISTA] ID ORD-0473 por $800.0
+[PING DEL SISTEMA] Conexión activa confirmada a las 2026-03-10T14:33:00Z
