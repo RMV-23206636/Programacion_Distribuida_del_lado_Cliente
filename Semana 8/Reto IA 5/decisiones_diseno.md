@@ -1,0 +1,16 @@
+# Decisiones de Diseño de Seguridad - Cliente Browser
+
+**1. Almacenamiento del access_token en memoria JS (Módulo)**
+*Justificación:* El token se guarda en una variable global o de closure dentro del módulo `TokenManager` y no en `localStorage` ni en `sessionStorage`. Esto mitiga significativamente los ataques XSS persistentes (Cross-Site Scripting), ya que un atacante no puede simplemente inyectar un script que ejecute `localStorage.getItem('token')` o iterar por el objeto de almacenamiento local para robar credenciales. Dado que el `access_token` vive por un tiempo corto (ej. 15 minutos), si se pierde al recargar la página, podemos volver a generarlo haciendo una petición de refresh al servidor.
+
+**2. Estrategia del refresh_token usando Cookie HttpOnly (Sub-ruta B)**
+*Justificación:* El `refresh_token` es muy valioso porque vive varios días y permite generar infinitos `access_token`. Al guardarlo en una cookie HttpOnly, el navegador se asegura de que sea completamente inaccesible a través de JavaScript (como por ejemplo mediante `document.cookie`). Esto lo hace inmune a ataques XSS que intenten robarlo. Para mitigar el riesgo asociado a CSRF (Cross-Site Request Forgery) que viene con las cookies, el endpoint `/api/auth/refresh` está protegido con reglas `SameSite=Strict` y el atacante CSRF no podría leer la respuesta con el nuevo `access_token` de todos modos, previniendo el secuestro total de la sesión. Es necesario usar `credentials: 'include'` en `fetch` para asegurar que el navegador adjunte esta cookie cuando pedimos el refresh.
+
+**3. Margin de refresh proactivo de 300 segundos (5 minutos)**
+*Justificación:* Elegimos 5 minutos porque balancea la necesidad de prevenir cortes bruscos de sesión para el usuario y la frecuencia de peticiones al backend. Un margen más corto (ej. 10 segundos) podría causar que la petición fallara en redes lentas, mientras que un margen de 10 minutos para un token de 15 minutos haría que estuviéramos renovando casi constantemente, sobrecargando la red y el backend. Además, absorbe posibles problemas de reloj desincronizado (clock skew) entre el cliente y el servidor.
+
+**4. Manejo de refresh singleton usando `_isRefreshing` y `_refreshQueue`**
+*Justificación:* Cuando una ráfaga de peticiones falla simultáneamente con error `401`, esta estrategia detiene el envío concurrente de docenas de peticiones de refresh. Si no tuviéramos este "bloqueo", podríamos saturar el servidor o hacer que el servidor inválide prematuramente la primera petición de refresh (debido a medidas de rotación de tokens estricta), causando que los siguientes request fallen inexplicablemente y expulsen al usuario. En cambio, encolamos en memoria las Promesas y las resolvemos/rechazamos una vez que el único refresh autorizado termina.
+
+**5. Comportamiento ante refresh fallido (Error o 401)**
+*Justificación:* Si la llamada para refrescar el token devuelve un error `401`, nuestro sistema asume inmediatamente que la sesión entera es ilegítima o ha expirado. Rechazamos todas las peticiones encoladas en `_refreshQueue` e invocamos el método `logout()` para borrar las cookies y vaciar `_accessToken`, deslogueando al usuario. Esto previene un loop de redirección infinita donde un `401` nos lleva a intentar refrescar, el refresco falla, y el interceptor trata de renovarlo de nuevo, y así sucesivamente.

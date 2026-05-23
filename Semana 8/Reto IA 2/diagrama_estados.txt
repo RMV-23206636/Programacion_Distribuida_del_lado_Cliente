@@ -1,0 +1,45 @@
+DIAGRAMA DE ESTADOS DEL CLIENTE (Gestión de JWT)
+
+[ INICIO (Sin Token) ]
+       |
+       | (Evento: Usuario envía credenciales y recibe 200 OK)
+       v
+[ AUTENTICADO (Token vigente) ]
+       |
+       |-- (Evento: isExpiringSoon() retorna true - faltan < 5 min)
+       |   Acción: Iniciar petición a /api/auth/refresh
+       v
+[ RENOVANDO PROACTIVO ]
+       |
+       |-- (Evento: Refresh exitoso 200 OK)
+       |   Acción: Reemplazar access_token en memoria
+       +----------------------> [ AUTENTICADO (Token vigente) ]
+       |
+       |-- (Evento: Refresh falla 401)
+       |   Acción: Limpiar estado (logout)
+       +----------------------> [ SIN TOKEN / DESLOGUEADO ]
+
+[ AUTENTICADO (Token vigente) ]
+       |
+       |-- (Evento: Petición a API devuelve 401 - expiró sin darnos cuenta)
+       |   Acción: Encolar petición original, llamar a refreshAccessToken()
+       v
+[ RENOVANDO REACTIVO ]
+       |
+       |-- (Evento: Ya hay un refresh en curso)
+       |   Acción: Añadir a cola de promesas
+       |
+       |-- (Evento: Refresh exitoso 200 OK)
+       |   Acción: Reemplazar access_token, resolver cola de peticiones, reintentar original
+       +----------------------> [ AUTENTICADO (Token vigente) ]
+       |
+       |-- (Evento: Refresh falla 401)
+       |   Acción: Limpiar estado (logout), redirigir a login
+       +----------------------> [ SIN TOKEN / DESLOGUEADO ]
+
+[ AUTENTICADO (Token vigente) ]
+       |
+       |-- (Evento: Usuario hace click en Logout)
+       |   Acción: Llamar a logout(), cancelar timers, borrar variable en memoria
+       v
+[ SIN TOKEN / DESLOGUEADO ]
